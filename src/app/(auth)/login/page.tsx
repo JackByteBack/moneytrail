@@ -4,12 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { CheckCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resent, setResent] = useState(false);
+  const [resentLoading, setResentLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -33,6 +36,19 @@ export default function LoginPage() {
     router.refresh();
   };
 
+  const handleResendConfirmation = async () => {
+    setResentLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+
+    if (!error) {
+      setResent(true);
+    }
+    setResentLoading(false);
+  };
+
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -45,6 +61,8 @@ export default function LoginPage() {
       setError(error.message);
     }
   };
+
+  const isEmailNotConfirmed = error?.includes("Email not confirmed");
 
   return (
     <div className="w-full max-w-md">
@@ -84,7 +102,28 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-body-sm text-negative">{error}</p>
+            <div className="space-y-2">
+              <p className="text-body-sm text-negative">{error}</p>
+              {isEmailNotConfirmed && (
+                <div>
+                  {resent ? (
+                    <p className="text-body-sm text-positive flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4" />
+                      Confirmation email sent! Check your inbox.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResendConfirmation}
+                      disabled={resentLoading}
+                      className="text-body-sm text-ink font-body-sm-strong hover:underline disabled:opacity-50"
+                    >
+                      {resentLoading ? "Sending..." : "Resend confirmation email"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           <button

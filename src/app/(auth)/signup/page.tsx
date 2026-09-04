@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { Mail } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [success, setSuccess] = useState(false);
   const supabase = createClient();
 
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -21,6 +21,9 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
 
     if (error) {
@@ -29,8 +32,8 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/");
-    router.refresh();
+    setSuccess(true);
+    setLoading(false);
   };
 
   const handleGoogleSignup = async () => {
@@ -45,6 +48,30 @@ export default function SignupPage() {
       setError(error.message);
     }
   };
+
+  if (success) {
+    return (
+      <div className="w-full max-w-md">
+        <div className="bg-canvas rounded-xl p-8 shadow-[0_0_0_1px_rgba(14,15,12,0.12)] text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-positive/10 rounded-full flex items-center justify-center">
+            <Mail className="w-8 h-8 text-positive" />
+          </div>
+          <h1 className="font-display text-display-sm text-ink mb-2">
+            Check your email
+          </h1>
+          <p className="text-body-md text-muted mb-6">
+            We sent a confirmation link to <strong>{email}</strong>
+          </p>
+          <Link
+            href="/login"
+            className="w-full py-3 px-6 bg-primary text-on-primary font-button-md rounded-xl hover:scale-[1.05] active:scale-[0.95] transition-transform inline-flex items-center justify-center gap-2"
+          >
+            Back to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md">
